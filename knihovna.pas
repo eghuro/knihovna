@@ -7,15 +7,17 @@ type 	index = 0 .. max_knih;
 	index2 = 0 .. max_knihoven;
 	pole = array[1..max_knihoven] of index;
 	pole2 = array[1..max_knihoven,1..2] of index2;
+	pole3 = array[1..max_knih,1..max_knihoven] of boolean;
 
-var	soubor_knih:text;
-	knihoven,knih,i,j,k:integer;
-	next:boolean;
-	vyskyt: array [1..max_knih,1..max_knihoven] of boolean;
-	nova_knihovna: pole2;
+var	next:boolean;
+	g_nova_knihovna: pole2;
+	g_knihoven:index2;
+	g_knih:index;
+	g_soubor_knih:text;
+	g_vyskyt:pole3;
 
-function transformuj(p:pole):pole2;
-var i:integer; nk:pole2;
+function transformuj(p:pole;knihoven:index2):pole2;
+var i,j:integer; nk:pole2;
 begin
 	{pokud bych ted zacal pole knihovna tridit, ztratim referenci -> soucasny index mi totiz indexuje knihovnu a obsahem pole je pocet vyskytu}
 	{nejprve predelam pole knihovna takto: nova_knihovna:array[1..knihoven,1..2] of integer;}
@@ -31,7 +33,7 @@ begin
 	transformuj:=nk;
 end;
 
-function input():boolean;
+function input(var knihoven:index2; var knih:index; var soubor_knih:text; var vyskyt:pole3; var nova_knihovna:pole2):boolean;
 var return:boolean; i,j,k,m:integer; knihovna:pole;
 begin
 	return:=true;
@@ -39,7 +41,8 @@ begin
 	{soubor zacina cislem knihoven, oznacujicim poctem existujicich knihoven;}
 	{dale cislem knih, oznacujicim pocet knih k nacteni}
 	{kniha obsahuje na radku: cislo m a dale seznam m celych cisel od 1 do maximalne max_knihoven oddelenych mezerami}
-	assign(soubor_knih,'knihy.txt');
+	assign(soubor_knih,'data2');
+
 	reset(soubor_knih);
 	read(soubor_knih,knihoven);
 	read(soubor_knih,knih);
@@ -69,7 +72,7 @@ begin
 		writeln('Pocet knih musi byt z intervalu <1;',max_knih,'> !');
 		return:=false;
 	end;
-	nova_knihovna:=transformuj(knihovna);
+	nova_knihovna:=transformuj(knihovna,knihoven);
 	input:=return;
 end;
 
@@ -79,6 +82,7 @@ var i,j,pivot,pom:integer;
 begin
  i:=l; j:=r;
  pivot:=A[(i+j) div 2,2]; {volba pivota}
+
  repeat
 	while A[i,2]<pivot do i:=i+1;
 	while A[j,2]>pivot do j:=j-1;
@@ -92,15 +96,22 @@ begin
  if i<r then QuickSort(A,i,r);
 end;
 
-procedure filter(var kn:pole2);
-var stop:boolean;
+procedure filter(var kn:pole2; var knihoven:index2; knih:index; var vyskyt:pole3);
+var stop:boolean; i,j,k:integer;
 begin
+	writeln('procedura filter - vypis vstupniho pole');
+	for i:=1 to knih do begin
+		write(i,'. kniha: ');
+		for j:=1 to knihoven do if vyskyt[i,j] then write('1 ') else write('0 ');
+		writeln('')
+	end;
+	writeln('filter');
 	{v prvni knihovne je nejvice svazku, ktere potrebuji - nepujdu si pro ne jinam}
 	for i:=1 to knihoven do
 		{vezmu knihovnu, projdu radek matice a ve vsech sloupcich nastavim false
 		mimo muj radek, zaroven pro patricnou knihovnu snizim pocet svazku}
 		for j:=1 to knih do begin
-			for k:=(kn[i,1]-1) downto i do{vracim se k maximalne i-te k}
+			if j<>1 then for k:=(kn[i,1]-1) downto i do{vracim se k maximalne i-te k}
 				if vyskyt[j,k]=true then begin
 					vyskyt[j,k]:=false;
 					kn[k,2]:=kn[k,2]-1;
@@ -111,23 +122,40 @@ begin
 					kn[k,2]:=kn[k,2]-1;
 				end;
 			{poradi knihoven se mohlo zmenit}
+			writeln('Quicksort');
 			QuickSort(kn,i+1,knihoven);{setridim od nasledujici do posledni}
 			{podivame se, zda-li posledni knihovny jiz neobsahuji 0 knih}
 			stop:=false;
 			repeat 
-				if kn[knihoven,2]=0 then knihoven:=knihoven-1
+				if kn[knihoven,2]=0 then begin
+					write('[',knihoven,',2]=0 ');
+					knihoven:=knihoven-1;
+					writeln('nove knihoven ',knihoven)
+				end
 				else stop:=true;
 			until stop;
 		end;
+		writeln('stop filteru');
+end;
+
+procedure output(nk:pole2; knihoven:index2);
+var i:integer;
+begin
+	for i:=1 to knihoven do write(nk[i,1],' ');
+	writeln(' ');
 end;
 
 begin
-	next:=input();
+	next:=input(g_knihoven,g_knih,g_soubor_knih,g_vyskyt,g_nova_knihovna);
 	if next then begin
+		writeln('pokracuji');
 		{setridim si pole nova_knihovna sestupne quicksortem, pro trideni uvaziji jen nova_knihovna[i,2]}
-		QuickSort(nova_knihovna,1,knihoven);
+		QuickSort(g_nova_knihovna,1,g_knihoven);
+		writeln('setrideno');
 		{filtruji knihovny k nalezeni nejmensiho poctu knihoven obsahujiciho vsechny zadane knihy}
-		filter(nova_knihovna);
-		output(nova_knihovna);
+		filter(g_nova_knihovna,g_knihoven,g_knih,g_vyskyt);
+		writeln('vyfiltrovano');
+		output(g_nova_knihovna,g_knihoven);
+		writeln('konec');
 	end
 end.
