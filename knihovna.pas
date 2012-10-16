@@ -96,46 +96,56 @@ begin
  if i<r then QuickSort(A,i,r);
 end;
 
+procedure print_array(vyskyt:pole3;knih,knihoven:integer);
+var i,j,a:integer; c:char;
+begin
+	for i:=1 to knih do begin
+		write(i,'. kniha: ');
+		for j:=1 to knihoven do begin 
+			if vyskyt[i,j] then write('1 ') else write('0 ');
+		end;
+		writeln('')
+	end;
+	read(c);
+end;
+
 procedure filter(var kn:pole2; var knihoven:index2; knih:index; var vyskyt:pole3);
 var stop:boolean; i,j,k:integer;
 begin
-	writeln('procedura filter - vypis vstupniho pole');
-	for i:=1 to knih do begin
-		write(i,'. kniha: ');
-		for j:=1 to knihoven do if vyskyt[i,j] then write('1 ') else write('0 ');
-		writeln('')
-	end;
-	writeln('filter');
+	print_array(vyskyt,knih,knihoven);
 	{v prvni knihovne je nejvice svazku, ktere potrebuji - nepujdu si pro ne jinam}
 	for i:=1 to knihoven do
 		{vezmu knihovnu, projdu radek matice a ve vsech sloupcich nastavim false
 		mimo muj radek, zaroven pro patricnou knihovnu snizim pocet svazku}
 		for j:=1 to knih do begin
-			if j<>1 then for k:=(kn[i,1]-1) downto i do{vracim se k maximalne i-te k}
+			writeln('[',i,',',j,']');
+			if i<>1 then for k:=(kn[i,1]-1) downto i do{vracim se k maximalne i-te k}
 				if vyskyt[j,k]=true then begin
 					vyskyt[j,k]:=false;
 					kn[k,2]:=kn[k,2]-1;
+					print_array(vyskyt,knih,knihoven);
 				end;
 			for k:=(kn[i,1]+1) to knihoven do 
 				if vyskyt[j,k]=true then begin
 					vyskyt[j,k]:=false;
 					kn[k,2]:=kn[k,2]-1;
+					print_array(vyskyt,knih,knihoven);
 				end;
 			{poradi knihoven se mohlo zmenit}
-			writeln('Quicksort');
 			QuickSort(kn,i+1,knihoven);{setridim od nasledujici do posledni}
+			print_array(vyskyt,knih,knihoven);
 			{podivame se, zda-li posledni knihovny jiz neobsahuji 0 knih}
 			stop:=false;
 			repeat 
 				if kn[knihoven,2]=0 then begin
 					write('[',knihoven,',2]=0 ');
 					knihoven:=knihoven-1;
-					writeln('nove knihoven ',knihoven)
+					writeln('nove knihoven ',knihoven);
+					print_array(vyskyt,knih,knihoven)
 				end
 				else stop:=true;
 			until stop;
 		end;
-		writeln('stop filteru');
 end;
 
 procedure output(nk:pole2; knihoven:index2);
@@ -148,14 +158,10 @@ end;
 begin
 	next:=input(g_knihoven,g_knih,g_soubor_knih,g_vyskyt,g_nova_knihovna);
 	if next then begin
-		writeln('pokracuji');
 		{setridim si pole nova_knihovna sestupne quicksortem, pro trideni uvaziji jen nova_knihovna[i,2]}
 		QuickSort(g_nova_knihovna,1,g_knihoven);
-		writeln('setrideno');
 		{filtruji knihovny k nalezeni nejmensiho poctu knihoven obsahujiciho vsechny zadane knihy}
 		filter(g_nova_knihovna,g_knihoven,g_knih,g_vyskyt);
-		writeln('vyfiltrovano');
 		output(g_nova_knihovna,g_knihoven);
-		writeln('konec');
 	end
 end.
